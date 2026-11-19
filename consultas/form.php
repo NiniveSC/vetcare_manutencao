@@ -1,11 +1,23 @@
+
 <?php
 require_once __DIR__.'/../config/database.php';require_once __DIR__.'/../config/auth.php';exigirLogin();
 $id=(int)($_GET['id']??0);$r=['animal_id'=>'','data_consulta'=>'','veterinario'=>'','motivo'=>'','status'=>'Agendada','observacoes'=>''];
 if($id){$s=$pdo->prepare("SELECT * FROM consultas WHERE id=?");$s->execute([$id]);$r=$s->fetch()?:$r;}
-$animais=$pdo->query("SELECT id,nome FROM animais ORDER BY nome")->fetchAll();$erro='';
+$animais=$pdo->query("SELECT id,nome FROM animais WHERE ativo=1 ORDER BY nome")->fetchAll();
+$erro='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
- $data=$_POST['data_consulta']??'';$dt=str_replace('T',' ',$data).(strlen($data)===16?':00':'');
+ $data=$_POST['data_consulta']??'';
+ $dt=str_replace('T',' ',$data).(strlen($data)===16?':00':'');
+
+ $r['animal_id']=$_POST['animal_id']??'';
+ $r['data_consulta']=$data;
+ $r['veterinario']=$_POST['veterinario']??'';
+ $r['motivo']=$_POST['motivo']??'';
+ $r['status']=$_POST['status']??'Agendada';
+ $r['observacoes']=$_POST['observacoes']??'';
+
  if(trim($_POST['veterinario']??'')==='')$erro='Informe o veterinário.';
+ elseif($data==='' || strtotime($data)<=time())$erro='A data da consulta precisa ser posterior à data e horário atuais.';
  else{
   $dados=[(int)$_POST['animal_id'],$dt,$_POST['veterinario'],$_POST['motivo'],$_POST['status'],$_POST['observacoes']];
   if($id){$s=$pdo->prepare("UPDATE consultas SET animal_id=?,data_consulta=?,veterinario=?,motivo=?,status=?,observacoes=? WHERE id=?");$s->execute([...$dados,$id]);}
